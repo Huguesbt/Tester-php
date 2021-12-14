@@ -7,6 +7,7 @@ use App\Request\RequestClient;
 use Symfony\Component\Yaml\Yaml;
 
 class ApiTester {
+    const REQUEST_LOG_FILE = __DIR__."/../../logs.txt";
 
     private $auth;
     private $url;
@@ -205,6 +206,7 @@ class ApiTester {
             ($method === "POST") ? $model : null
         );
 
+        $this->logRequest($response);
         if ($asserts !== null) {
             try {
                 new AssertsRequest((object)$response, $asserts);
@@ -325,5 +327,9 @@ class ApiTester {
             }
         }
         return $result;
+    }
+
+    private function logRequest(array $response){
+        file_put_contents(self::REQUEST_LOG_FILE, json_encode($response). "\n", FILE_APPEND | LOCK_EX);
     }
 }
