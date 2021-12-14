@@ -12,8 +12,8 @@ class ApiTester {
     private $url;
     private $token;
     private $groups;
-    private $pathRegex      = '/{([a-zA-Z0-9-]+.+)}/';
-    private $results = [];
+    private $pathRegex = '/{([a-zA-Z0-9-]+.+)}/';
+    private $results   = [];
 
     /**
      * @throws \Exception
@@ -21,8 +21,8 @@ class ApiTester {
     public function __construct(string $configsFile) {
         $configs = $this->parse($configsFile);
 
-        $this->url    = $configs->url;
-        if (isset($configs->auth)) $this->auth   = $configs->auth;
+        $this->url = $configs->url;
+        if (isset($configs->auth)) $this->auth = $configs->auth;
         $this->groups = $configs->groups;
 
         $this->checkUrl();
@@ -123,18 +123,14 @@ class ApiTester {
         $model         = isset($group->model) ? $this->buildModel($group->model, $group->name) : null;
 
         foreach ($group->routes as $route) {
-            try {
-                $this->runApiCall(
-                    $this->buildUrl($group->prefix . $this->getPath($route->path)),
-                    $route->method,
-                    $route->name,
-                    $model,
-                    $route->asserts
-                );
-            } catch (\AssertionError $e){
-                echo "Error: {$route->method} {$route->name} - {$e->getMessage()}";
-                die(1);
-            }
+            $this->runApiCall(
+                $this->buildUrl($group->prefix . $this->getPath($route->path)),
+                $route->method,
+                $route->name,
+                $route->format,
+                $model,
+                $route->asserts
+            );
         }
     }
 
@@ -168,11 +164,12 @@ class ApiTester {
                     $modelBuilt[ $k ] = uniqid($prefix) . "-test@localhost.lan";
                     break;
                 case "postal_code":
-                    $modelBuilt[ $k ] = random_int(10, 299).random_int(111, 999);
+                    $modelBuilt[ $k ] = random_int(10, 299) . random_int(111, 999);
                     break;
                 case "date":
 //                    Random date between 1970-01-01 and now minus 20 years
-                    $date = random_int(strtotime("1970-01-01"), (new \DateTime())->sub(new \DateInterval('P20Y'))->getTimestamp());
+                    $date             = random_int(
+                        strtotime("1970-01-01"), (new \DateTime())->sub(new \DateInterval('P20Y'))->getTimestamp());
                     $modelBuilt[ $k ] = date('Y-m-d', $date);
                     break;
                 case "string":
@@ -193,16 +190,28 @@ class ApiTester {
      * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
      * @throws \Exception
      */
-    private function runApiCall(string $url, string $method, string $name, array $model, object $asserts = null) {
+    private function runApiCall(
+        string $url,
+        string $method,
+        string $name,
+        string $formatBody,
+        array  $model,
+        object $asserts = null
+    ) {
         $response = $this->runRoute(
             $url,
             $method,
+            $formatBody,
             ($method === "POST") ? $model : null
         );
 
-        var_dump(json_encode($model));
         if ($asserts !== null) {
-            new AssertsRequest((object)$response, $asserts);
+            try {
+                new AssertsRequest((object)$response, $asserts);
+            } catch (\AssertionError $e) {
+                echo "Error: $method $name - {$e->getMessage()}";
+                die(1);
+            }
         }
         $this->results[ $name ] = $response;
     }
@@ -213,15 +222,16 @@ class ApiTester {
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
      */
-    private function runRoute(string $url, string $method, array $body = null): array {
+    private function runRoute(string $url, string $method, string $formatBody, array $body = null): array {
+        [$strFormatted, $jsonFormatted] = $this->formatBody($body, $formatBody);
         $request = $this->makeRequest(
             $url,
             $method,
-            null,
-            $body,
-            [
+            $strFormatted,
+            $jsonFormatted,
+            $this->token ? [
                 'Authorization' => "Bearer {$this->token}",
-            ]
+            ] : null
         );
 
         return [
@@ -229,9 +239,33 @@ class ApiTester {
             "method"   => $request->getResponseInfo('http_method'),
             "body"     => $body,
             "status"   => $request->getResponsestatusCode(),
-            "response" => $request->getJsonBody(),
+            "response" => $this->getJsonBody($request),
             "headers"  => $request->getResponseHeaders(),
         ];
+    }
+
+    private function formatBody(array $body, string $format): array {
+        $json = $text = null;
+        switch ($format) {
+            case "json":
+                $json = $body;
+                break;
+            default:
+                foreach ($body as $k => $val) {
+                    $text .= "$k=$val&";
+                }
+        }
+        return [$text, $json];
+    }
+
+    private function getJsonBody(RequestClient $request): ?array {
+        if (null !== ($body = $request->getJsonBody())) {
+            return (array)$body;
+        } elseif (null !== ($body = $request->getRawBody())) {
+            return json_decode($body, true);
+        } else {
+            return null;
+        }
     }
 
     private function buildUrl(string $path): string {
@@ -239,17 +273,17 @@ class ApiTester {
     }
 
     private function getPath(?string $path): string {
-        if(null === $path) return "";
-        if($path === "/" || $path === "") return $path;
+        if (null === $path) return "";
+        if ($path === "/" || $path === "") return $path;
         return $this->buildPath($path);
     }
 
     private function buildPath(string $path): ?string {
         preg_match($this->pathRegex, $path, $matches);
         if (count($matches) > 1) {
-            $m = explode(".", $matches[1]);
+            $m         = explode(".", $matches[1]);
             $routeName = array_shift($m);
-            $pathes     = $m;
+            $pathes    = $m;
 
             if ($response = $this->getResponseDataFromRouteName($routeName)) {
                 $value = $this->getFieldFromRandomValue($response, $pathes);
@@ -264,32 +298,32 @@ class ApiTester {
         }
     }
 
-    private function getFieldFromRandomValue(array $result, array $pathes){
-        foreach ($pathes as $path) {
-            if (is_array($result)){
-                if(!isset($result[$path])){
-                    return null;
-                }
-
-                $result = $result[$path];
-                if (is_array($result)){
-                    $result = $result[ array_rand($result) ];
-                }
-            } elseif (isset($result[$path])){
-                $result = $result[$path];
-            }
-        }
-        return $result;
-    }
-
-    private function getResponseDataFromRouteName(string $routeName): ?array{
-        if(!isset($this->results[ $routeName ])){
+    private function getResponseDataFromRouteName(string $routeName): ?array {
+        if (!isset($this->results[ $routeName ])) {
             return null;
         }
-        if(!isset($this->results[ $routeName ]["response"])){
+        if (!isset($this->results[ $routeName ]["response"])) {
             return null;
         }
 
         return $this->results[ $routeName ]["response"];
+    }
+
+    private function getFieldFromRandomValue(array $result, array $pathes) {
+        foreach ($pathes as $path) {
+            if (is_array($result)) {
+                if (!isset($result[ $path ])) {
+                    return null;
+                }
+
+                $result = $result[ $path ];
+                if (is_array($result)) {
+                    $result = $result[ array_rand($result) ];
+                }
+            } elseif (isset($result[ $path ])) {
+                $result = $result[ $path ];
+            }
+        }
+        return $result;
     }
 }

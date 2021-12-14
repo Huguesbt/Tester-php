@@ -21,7 +21,8 @@ groups:
     routes:
       - name: add
         method: POST
-        path:
+        path: ""
+        format: form
         headers:
           - name: Content-Type
             value: text/plain
@@ -33,6 +34,14 @@ groups:
             - type: notNull
             - type: notFound
               schema:
+                curl_error: string
+            - type: notFound
+              schema:
                 Result:
                   body:
                     error: string
+            - type: found
+              schema:
+                Result:
+                  body:
+                    customers_id: int
