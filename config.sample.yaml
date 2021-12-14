@@ -1,10 +1,3 @@
-# Tester
-
-Ligth and simple framework based on php to test api based on yaml file
-
-## config.yaml
-
-```
 url: http://localhost
 groups:
   - name: default
@@ -34,4 +27,3 @@ groups:
             - type: found
               schema:
                 id: int # available value : string, int, url, bool
-```

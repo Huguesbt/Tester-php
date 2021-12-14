@@ -105,6 +105,9 @@ class AssertsRequest {
             case "int":
                 $this->assert(is_numeric($response), $description);
                 break;
+            case "bool":
+                $this->assert(is_bool($response), $description);
+                break;
             case "string":
             default:
                 $this->assert(is_string($response), $description);
@@ -129,12 +132,12 @@ class AssertsRequest {
                 case "notNull":
                     $this->assert(
                         property_exists($this->responseObject, "response") && $this->responseObject->response !== null,
-                        ($this->assertsValues->description ?: "Schema ") . "response attempted {$schema->type}");
+                        ($this->assertsValues->description ?: "Response ") . "attempted {$schema->type}");
                     break;
                 case "null":
                     $this->assert(
                         property_exists($this->responseObject, "response") && $this->responseObject->response === null,
-                        ($this->assertsValues->description ?: "Schema ") . "response attempted {$schema->type}");
+                        ($this->assertsValues->description ?: "Response ") . "attempted {$schema->type}");
                     break;
                 case "notFound":
                     $this->assert(
