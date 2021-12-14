@@ -48,7 +48,7 @@
     },
     "scripts": {
         "test": [
-            "@php index.php"
+            "@php index.php -c config.yaml"
         ]
     },
     "conflict": {

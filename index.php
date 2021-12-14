@@ -7,15 +7,18 @@ use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
-$configsFile = __DIR__ . "/config.yaml";
-
-if(!file_exists($configsFile)){
-    echo "Missing configs file\nPlease duplicate config.sample.yaml to config.yaml !!\n";
+$arguments = getopt("c:");
+if(!isset($arguments["c"])){
+    echo "Missing config parameter ( -c ) !!\n";
+    die(1);
+}
+if(!file_exists($arguments["c"])){
+    echo "Config file not found\nYou could duplicate config.sample.yaml !!\n";
     die(1);
 }
 
 try {
-    $tester = new ApiTester($configsFile);
+    $tester = new ApiTester($arguments["c"]);
     $tester->run();
 } catch (ClientExceptionInterface | RedirectionExceptionInterface | ServerExceptionInterface |
 TransportExceptionInterface | \Exception $e) {
