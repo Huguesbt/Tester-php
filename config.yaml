@@ -35,8 +35,6 @@ groups:
             - type: notFound
               schema:
                 curl_error: string
-            - type: notFound
-              schema:
                 Result:
                   body:
                     error: string

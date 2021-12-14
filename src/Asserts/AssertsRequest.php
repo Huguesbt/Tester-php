@@ -11,7 +11,7 @@ class AssertsRequest {
      * @throws \Exception
      */
     public function __construct(object $responseObject, object $assertsValues) {
-        $this->assertsValues  = $assertsValues;
+        $this->assertsValues = $assertsValues;
         property_exists($this->assertsValues, 'description') ?: $this->assertsValues->description = "";
         $this->responseObject = $responseObject;
 
@@ -42,16 +42,14 @@ class AssertsRequest {
      * @throws \Exception
      */
     private function assertsStatusCode(int $attempted, int $result, string $typeComparison) {
+        $description = ($this->assertsValues->description ?: "StatusCode ") . "get $result, attempted $attempted";
         switch ($typeComparison) {
             case "notEqual":
-                $this->assert(
-                    $attempted !== $result, ($this->assertsValues->description ?: "statusCode") . " get $result, attempted
-                $attempted");
+                $this->assert($attempted !== $result, $description);
                 break;
             case "equal":
             default:
-                $this->assert(
-                    $attempted === $result, ($this->assertsValues->description ?: "statusCode") . " get $result, attempted $attempted");
+                $this->assert($attempted === $result, $description);
         }
     }
 
@@ -60,9 +58,9 @@ class AssertsRequest {
      */
     private function assert(bool $condition, string $description = null) {
         if (false === assert($condition, $description)) {
-            throw new \Exception("TEST FAILED $description");
+            throw new \Exception("TEST FAILED : $description");
         } else {
-            echo "Test success $description\n";
+            echo "Test success : $description\n";
         }
     }
 
@@ -82,9 +80,9 @@ class AssertsRequest {
      */
     private function assertsHeaderFound(object $header) {
         $headerResponse = $this->responseObject->headers[ $header->name ];
+        $description = $this->assertsValues->description ?: "Header ";
         $this->assert(
-            isset($headerResponse),
-            $this->assertsValues->description ?: "found header {$header->name}");
+            isset($headerResponse), "$description found {$header->name}");
     }
 
     /**
@@ -99,22 +97,17 @@ class AssertsRequest {
      * @throws \Exception
      */
     private function assertsType(string $type, string $name, $response) {
+        $description = ($this->assertsValues->description ?: "Type ") . "{$name} is ".gettype($response).", attempted $type";
         switch ($type) {
             case "url":
-                $this->assert(
-                    filter_var($response, FILTER_VALIDATE_URL),
-                    $this->assertsValues->description ?: "type {$name} is url");
+                $this->assert(filter_var($response, FILTER_VALIDATE_URL), $description);
                 break;
             case "int":
-                $this->assert(
-                    is_numeric($response),
-                    $this->assertsValues->description ?: "type {$name} is int");
+                $this->assert(is_numeric($response), $description);
                 break;
             case "string":
             default:
-                $this->assert(
-                    is_string($response),
-                    $this->assertsValues->description ?: "type {$name} is string");
+                $this->assert(is_string($response), $description);
         }
     }
 
@@ -122,10 +115,9 @@ class AssertsRequest {
      * @throws \Exception
      */
     private function assertsHeaderEqual(object $header) {
-        $headerResponse = $this->responseObject->headers[ $header->name ];
-        $this->assert(
-            isset($headerResponse) && $headerResponse[0] === $header->value,
-            $this->assertsValues->description ?: "found header {$header->name}");
+        $headerResponse = $this->responseObject->headers[ $header->name ][0];
+        $description = ($this->assertsValues->description ?: "Header ") . "{$header->name} is ".gettype($headerResponse).", attempted {$header->value}";
+        $this->assert($headerResponse === $header->value, $description);
     }
 
     /**
@@ -133,35 +125,40 @@ class AssertsRequest {
      */
     private function assertsSchema(array $schemas) {
         foreach ($schemas as $schema) {
-            switch ($schema->type){
+            switch ($schema->type) {
                 case "notNull":
                     $this->assert(
                         property_exists($this->responseObject, "response") && $this->responseObject->response !== null,
-                        $this->assertsValues->description ?: " get not null, attempted not null");
-                break;
+                        ($this->assertsValues->description ?: "Schema ") . "response attempted {$schema->type}");
+                    break;
+                case "null":
+                    $this->assert(
+                        property_exists($this->responseObject, "response") && $this->responseObject->response === null,
+                        ($this->assertsValues->description ?: "Schema ") . "response attempted {$schema->type}");
+                    break;
                 case "notFound":
                     $this->assert(
-                        !$this->check($this->responseObject->response, (array) $schema->schema),
-                        $this->assertsValues->description ?: "not found schema key ".json_encode($schema->schema));
-                break;
+                        !$this->check($this->responseObject->response, (array)$schema->schema),
+                        ($this->assertsValues->description ?: "Schema ") . json_encode($schema->schema)." attempted {$schema->type}");
+                    break;
                 case "found":
                     $this->assert(
-                        $this->check($this->responseObject->response, (array) $schema->schema),
-                        $this->assertsValues->description ?: "found schema key ".json_encode($schema->schema));
-                break;
+                        $this->check($this->responseObject->response, (array)$schema->schema),
+                        ($this->assertsValues->description ?: "Schema ") . json_encode($schema->schema)." attempted {$schema->type}");
+                    break;
             }
         }
     }
 
-    private function check(array $response, array $schema): bool{
-        foreach ($schema as $k => $val){
-            if ( isset($response[$k])){
-                if (is_array($val)){
-                    $this->check($response[$k], $val);
+    private function check(array $response, array $schema): bool {
+        foreach ($schema as $k => $val) {
+            if (isset($response[ $k ])) {
+                if (is_array($val)) {
+                    $this->check($response[ $k ], $val);
                 } else {
                     try {
-                        $this->assertsType($val, $k, $response[$k]);
-                    } catch(\Exception $e){
+                        $this->assertsType($val, $k, $response[ $k ]);
+                    } catch (\Exception $e) {
                         //
                     } finally {
                         return true;

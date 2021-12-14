@@ -209,7 +209,7 @@ class ApiTester {
             try {
                 new AssertsRequest((object)$response, $asserts);
             } catch (\AssertionError $e) {
-                echo "Error: $method $name - {$e->getMessage()}";
+                echo "Error: $method $name - {$e->getMessage()}\n";
                 die(1);
             }
         }
