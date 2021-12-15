@@ -7,7 +7,7 @@ use App\Request\RequestClient;
 use Symfony\Component\Yaml\Yaml;
 
 class ApiTester {
-    const REQUEST_LOG_FILE = __DIR__."/../../logs.txt";
+    const REQUEST_LOG_FILE = __DIR__."/../../../test.log";
 
     private $auth;
     private $url;

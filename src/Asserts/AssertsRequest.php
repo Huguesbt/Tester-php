@@ -108,6 +108,12 @@ class AssertsRequest {
             case "bool":
                 $this->assert(is_bool($response), $description);
                 break;
+            case "array":
+                $this->assert(is_array($response), $description);
+                break;
+            case "object":
+                $this->assert(is_object($response), $description);
+                break;
             case "string":
             default:
                 $this->assert(is_string($response), $description);
@@ -141,23 +147,35 @@ class AssertsRequest {
                     break;
                 case "notFound":
                     $this->assert(
-                        !$this->check($this->responseObject->response, (array)$schema->schema),
+                        !$this->checkType($this->responseObject->response, $schema->schema),
                         ($this->assertsValues->description ?: "Schema ") . json_encode($schema->schema)." attempted {$schema->type}");
                     break;
                 case "found":
                     $this->assert(
-                        $this->check($this->responseObject->response, (array)$schema->schema),
+                        $this->checkType($this->responseObject->response, $schema->schema),
                         ($this->assertsValues->description ?: "Schema ") . json_encode($schema->schema)." attempted {$schema->type}");
                     break;
+                case "equal":
+                    $this->assert(
+                        $this->checkEqual($this->responseObject->response, $schema->schema),
+                        ($this->assertsValues->description ?: "Schema ") . json_encode($schema->schema)." attempted {$schema->type}");
+                    break;
+                case "notEqual":
+                    $this->assert(
+                        !$this->checkEqual($this->responseObject->response, $schema->schema),
+                        ($this->assertsValues->description ?: "Schema ") . json_encode($schema->schema)." attempted {$schema->type}");
+                    break;
+                default:
+                    $this->notFound($this->assertsValues->description ?: "Schema ", "{$schema->type} not found !!");
             }
         }
     }
 
-    private function check(array $response, array $schema): bool {
+    private function checkType(array $response, $schema): bool {
         foreach ($schema as $k => $val) {
             if (isset($response[ $k ])) {
-                if (is_array($val)) {
-                    $this->check($response[ $k ], $val);
+                if (is_object($val)) {
+                    return $this->checkType($response[ $k ], $val);
                 } else {
                     try {
                         $this->assertsType($val, $k, $response[ $k ]);
@@ -170,5 +188,22 @@ class AssertsRequest {
             }
         }
         return false;
+    }
+
+    private function checkEqual(array $response, $schema): bool {
+        foreach ($schema as $k => $val) {
+            if (isset($response[ $k ])) {
+                if (is_object($val)) {
+                    return $this->checkEqual($response[ $k ], $val);
+                } else {
+                    return $val === $response[ $k ];
+                }
+            }
+        }
+        return false;
+    }
+
+    private function notFound(string $description, string $msg){
+        echo "Test WARNING : $description $msg\n";
     }
 }
