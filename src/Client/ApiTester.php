@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Client;
+namespace TesterPhp\Client;
 
-use App\Asserts\AssertsRequest;
-use App\Request\RequestClient;
+use TesterPhp\Asserts\AssertsRequest;
+use TesterPhp\Request\RequestClient;
 use Symfony\Component\Yaml\Yaml;
 
 class ApiTester {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Request;
+namespace TesterPhp\Request;
 
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Asserts;
+namespace TesterPhp\Asserts;
 
 class AssertsRequest {
 
