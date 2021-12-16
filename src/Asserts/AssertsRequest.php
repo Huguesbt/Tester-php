@@ -193,10 +193,10 @@ class AssertsRequest {
     private function checkEqual(array $response, $schema): bool {
         foreach ($schema as $k => $val) {
             if (isset($response[ $k ])) {
-                if (is_object($val)) {
-                    return $this->checkEqual($response[ $k ], $val);
+                if (is_object($val) || is_array($val)) {
+                    return $this->checkEqual($response[ $k ], (object) $val);
                 } else {
-                    return $val === $response[ $k ];
+                    return (string) $val === (string) $response[ $k ];
                 }
             }
         }

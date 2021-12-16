@@ -4,7 +4,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=7.2.5",
+        "php": ">=7.4",
         "ext-json": "*",
         "symfony/http-client": "^6.0",
         "symfony/yaml": "5.3.*"
@@ -18,5 +18,10 @@
         "test": [
             "@php index.php -c config.yaml"
         ]
+    },
+    "extra": {
+        "php": {
+            "require": "7.4.*"
+        }
     }
 }

@@ -156,7 +156,7 @@ class ApiTester {
                     $modelBuilt[ $k ] = "";
                     break;
                 case "phone":
-                    $modelBuilt[ $k ] = "+33123456789";
+                    $modelBuilt[ $k ] = "0123456789";
                     break;
                 case "address":
                     $modelBuilt[ $k ] = random_int(1, 100) . " rue de l'avant";

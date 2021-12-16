@@ -19,7 +19,10 @@ class RequestClient {
     private $response;
 
     public function __construct() {
-        $this->client = HttpClient::create();
+        $this->client = HttpClient::create([
+            "verify_host" => false,
+            "verify_peer" => false,
+       ]);
     }
 
     public function setUrl(string $url) {
