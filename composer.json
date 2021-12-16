@@ -1,4 +1,5 @@
 {
+    "name": "huguesbt/tester-php",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
